@@ -2,11 +2,25 @@ use std::collections::HashMap;
 
 fn main() {
     let (first_group, second_group) = read_input();
-    let dis = part_one(first_group.clone(), second_group.clone());
-    
-    println!("{}", dis);
+    // let dis = part_one(first_group.clone(), second_group.clone());
+    let similarity_score = part_two(&first_group, &second_group);
+    println!("{}", similarity_score);
+    // println!("{}", dis);
 }
-
+#[allow(dead_code)]
+fn part_two(first_group: &Vec<u32>, second_group: &Vec<u32>) -> u32 {
+    let second_group_counts = second_group.iter().fold(HashMap::new(), |mut map, &num| {
+        *map.entry(num).or_insert(0) += 1;
+        map
+    });
+    let mut similarity_score: u32 = 0;
+    first_group.iter().for_each(|num| {
+        if let Some(count) = second_group_counts.get(num) {
+            similarity_score += count * num;
+        }
+    });
+    similarity_score
+}
 #[allow(dead_code)]
 fn part_one(mut first_group: Vec<u32>, mut second_group: Vec<u32>) -> u32 {
     first_group.sort();
