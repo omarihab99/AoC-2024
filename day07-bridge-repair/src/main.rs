@@ -25,10 +25,24 @@ fn backtrack(input: &Vec<u128>, first_operand: u128, index: usize, result: u128)
     if index == input.len() {
         return first_operand == result;
     }
-    backtrack(input, first_operand + input[index], index + 1, result)
-        || backtrack(input, first_operand * input[index], index + 1, result)
+    if backtrack(input, first_operand + input[index], index + 1, result) {
+        return true;
+    }
+    if backtrack(input, first_operand * input[index], index + 1, result) {
+        return true;
+    }
+    if let Some(concat) = concatenate(first_operand, input[index]) {
+        if backtrack(input, concat, index + 1, result) {
+            return true;
+        }
+    }
+    false
 }
-
+fn concatenate(a: u128, b: u128) -> Option<u128> {
+    let b_str = b.to_string();
+    let b_len = b_str.len();
+    a.checked_mul(10u128.pow(b_len as u32))?.checked_add(b)
+}
 fn read_input() -> Vec<Vec<u128>> {
     let input = include_str!("input.txt");
     input
