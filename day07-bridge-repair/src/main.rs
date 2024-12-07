@@ -1,9 +1,9 @@
 fn main() {
     let input = read_input();
-    println!("{}", solve(input));
+    println!("{}", solve(input, false));
 }
 
-fn solve(input: Vec<Vec<u128>>) -> u128 {
+fn solve(input: Vec<Vec<u128>>, _2: bool) -> u128 {
     input
         .iter()
         .filter_map(|line| {
@@ -12,7 +12,7 @@ fn solve(input: Vec<Vec<u128>>) -> u128 {
             }
             let target = line[0];
             let numbers = &line[1..];
-            if backtrack(&numbers.to_vec(), numbers[0], 1, target) {
+            if backtrack(&numbers.to_vec(), numbers[0], 1, target, _2) {
                 Some(target)
             } else {
                 None
@@ -21,22 +21,20 @@ fn solve(input: Vec<Vec<u128>>) -> u128 {
         .sum()
 }
 
-fn backtrack(input: &Vec<u128>, first_operand: u128, index: usize, result: u128) -> bool {
+fn backtrack(input: &Vec<u128>, first_operand: u128, index: usize, result: u128, _2: bool) -> bool {
     if index == input.len() {
         return first_operand == result;
     }
-    if backtrack(input, first_operand + input[index], index + 1, result) {
-        return true;
-    }
-    if backtrack(input, first_operand * input[index], index + 1, result) {
-        return true;
-    }
-    if let Some(concat) = concatenate(first_operand, input[index]) {
-        if backtrack(input, concat, index + 1, result) {
-            return true;
-        }
-    }
-    false
+    backtrack(input, first_operand + input[index], index + 1, result, _2)
+        || backtrack(input, first_operand * input[index], index + 1, result, _2)
+        || (_2
+            && backtrack(
+                input,
+                concatenate(first_operand, input[index]).unwrap(),
+                index + 1,
+                result,
+                _2,
+            ))
 }
 fn concatenate(a: u128, b: u128) -> Option<u128> {
     let b_str = b.to_string();
