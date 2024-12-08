@@ -1,57 +1,87 @@
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    isize,
+};
 
 fn main() {
     let input = read_input();
-    println!("{}", solve(input.clone()));
+    println!("{}", solve(input.clone(), true)); //change to false for part_one of the puzzle.
 }
-fn solve(input: Vec<Vec<char>>) -> u32 {
+fn solve(input: Vec<Vec<char>>, _2: bool) -> u32 {
     let rows = input.len();
     let cols = input[0].len();
-    let mut count = 0;
-    let mut antinodes: HashSet<(isize, isize)> = HashSet::new();
-    let mut frequencies: HashMap<char, Vec<(isize, isize)>> = HashMap::new();
-    for i in 0..input.len() {
-        for j in 0..input[0].len() {
-            let c = input[i][j];
-            if c != '.' {
-                frequencies
-                    .entry(c)
-                    .or_insert(Vec::new())
-                    .push((i as isize, j as isize));
-            }
-        }
-    }
-    for (_, positions) in frequencies {
-        if positions.len() > 1 {
-            for i in 0..positions.len() {
-                for j in i + 1..positions.len() {
-                    let (x1, y1) = positions[i];
-                    let (x2, y2) = positions[j];
-                    let dx = x2 - x1;
-                    let dy = y2 - y1;
-                    let antinode1 = (x1 - dx, y1 - dy);
-                    let antinode2 = (x2 + dx, y2 + dy);
-                    if antinode1.0 >= 0
-                        && antinode1.0 < rows as isize
-                        && antinode1.1 >= 0
-                        && antinode1.1 < cols as isize
-                        && antinodes.insert(antinode1)
-                    {
-                        count += 1;
-                    }
-                    if antinode2.0 >= 0
-                        && antinode2.0 < rows as isize
-                        && antinode2.1 >= 0
-                        && antinode2.1 < cols as isize
-                        && antinodes.insert(antinode2)
-                    {
-                        count += 1;
-                    }
+    let frequencies = input
+        .iter()
+        .enumerate()
+        .flat_map(|(i, row)| {
+            row.iter().enumerate().filter_map(move |(j, &c)| {
+                if c != '.' {
+                    Some((c, (i as isize, j as isize)))
+                } else {
+                    None
                 }
+            })
+        })
+        .fold(HashMap::new(), |mut acc, (freq, pos)| {
+            acc.entry(freq).or_insert(Vec::new()).push(pos);
+            acc
+        });
+    frequencies
+        .values()
+        .filter(|positions| positions.len() > 1)
+        .flat_map(|positions| {
+            positions.iter().enumerate().flat_map(move |(i, &pos1)| {
+                positions.iter().skip(i + 1).map(move |&pos2| (pos1, pos2))
+            })
+        })
+        .fold(HashSet::new(), |mut antinodes, (pos1, pos2)| {
+            if _2 {
+                part_two(pos1, pos2, rows, cols).for_each(|antinode| {
+                    antinodes.insert(antinode);
+                })
+            } else {
+                part_one(pos1, pos2, rows, cols).for_each(|antinode| {
+                    antinodes.insert(antinode);
+                });
             }
-        }
-    }
-    count
+            antinodes
+        })
+        .len() as u32
+}
+fn part_one(
+    pos1: (isize, isize),
+    pos2: (isize, isize),
+    rows: usize,
+    cols: usize,
+) -> impl Iterator<Item = (isize, isize)> {
+    let dx = pos2.0 - pos1.0;
+    let dy = pos2.1 - pos1.1;
+    let antinode1 = (pos1.0 - dx, pos1.1 - dy);
+    let antinode2 = (pos2.0 + dx, pos2.1 + dy);
+    vec![antinode1, antinode2]
+        .into_iter()
+        .filter(move |&(x, y)| x >= 0 && x < rows as isize && y >= 0 && y < cols as isize)
+}
+fn part_two(
+    pos1: (isize, isize),
+    pos2: (isize, isize),
+    rows: usize,
+    cols: usize,
+) -> impl Iterator<Item = (isize, isize)> {
+    let dx = pos1.0 - pos2.0;
+    let dy = pos1.1 - pos2.1;
+    let line_points = |mut pos: (isize, isize), step: (isize, isize)| {
+        std::iter::from_fn(move || {
+            if pos.0 >= 0 && pos.0 < rows as isize && pos.1 >= 0 && pos.1 < cols as isize {
+                let curr = pos;
+                pos = (pos.0 + step.0, pos.1 + step.1);
+                Some(curr)
+            } else {
+                None
+            }
+        })
+    };
+    line_points(pos1, (-dx, -dy)).chain(line_points(pos2, (dx, dy)))
 }
 fn read_input() -> Vec<Vec<char>> {
     let input = include_str!("input.txt");
@@ -66,8 +96,13 @@ mod test {
         assert_ne!(input.len(), 0);
     }
     #[test]
-    fn test_solve() {
+    fn test_solve_part_one() {
         let input = read_input();
-        assert_eq!(solve(input), 14);
+        assert_eq!(solve(input, false), 14);
+    }
+    #[test]
+    fn test_solve_part_two() {
+        let input = read_input();
+        assert_eq!(solve(input, true), 34);
     }
 }
