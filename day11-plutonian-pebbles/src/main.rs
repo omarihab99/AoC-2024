@@ -1,26 +1,37 @@
+use std::collections::HashMap;
+
 fn main() {
-    let mut input = read_input();
-    println!("{}", solve(input));
+    let input = read_input();
+    println!("{}", solve(input, true));
 }
 
-fn solve(mut input: Vec<u64>) -> usize {
-    for _ in 0..25 {
-        let mut new_stones = Vec::new();
-        for stone in input.iter() {
-            if *stone == 0 {
-                new_stones.push(1);
-            } else if ((*stone as f64).log10() as u64 + 1) & 1 == 0 {
-                let digits_count = ((*stone as f64).log10() as u64 + 1) as u32;
-                let divisor = 10_u64.pow(digits_count / 2 );
-                new_stones.push(*stone / divisor);
-                new_stones.push(*stone % divisor);
+fn solve(input: Vec<u64>, _2: bool) -> usize {
+    let mut counts = input.iter().fold(HashMap::new(), |mut acc, &stone| {
+        *acc.entry(stone).or_insert(0) += 1;
+        acc
+    });
+    let num_blinks = if _2 { 75 } else { 25 };
+    for _ in 0..num_blinks {
+        let mut new_stones = HashMap::new();
+        for (&stone, &count) in &counts {
+            if stone == 0 {
+                *new_stones.entry(1).or_insert(0) += count;
+            } else if (stone.to_string().len() % 2) == 0 {
+                let digits_count = stone.to_string().len() as u32;
+                let divisor = 10_u64.pow(digits_count / 2);
+                let left = stone / divisor;
+                let right = stone % divisor;
+                *new_stones.entry(left).or_insert(0) += count;
+                *new_stones.entry(right).or_insert(0) += count;
             } else {
-                new_stones.push(*stone * 2024);
+                let multiplied = stone * 2024;
+                *new_stones.entry(multiplied).or_insert(0) += count;
             }
         }
-        input = new_stones;
+        counts = new_stones;
     }
-    input.len()
+
+    counts.values().sum()
 }
 fn read_input() -> Vec<u64> {
     include_str!("input.txt")
@@ -44,6 +55,6 @@ mod tests {
     #[test]
     fn test_part_one() {
         let input = read_input();
-        assert_eq!(solve(input), 55312);
+        assert_eq!(solve(input, false), 55312);
     }
 }
